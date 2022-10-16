@@ -1,0 +1,242 @@
+openapi: 3.0.3
+info:
+  title: Swiss Bitcoin Pay Merchant's API
+  description: "API for merchants to connect to their Swiss Bitcoin Pay's wallet account.<br/>For all calls, you need to provide the `X-Api-Key` header with your API Key, available in your dashboard."
+  termsOfService: http://swagger.io/terms/
+  contact:
+    email: hello@swiss-bitcoin-pay.ch
+  version: 1.0.0
+servers:
+  - url: https://api.swiss-bitcoin-pay.ch
+tags:
+  - name: wallet
+    description: Everything about your wallet
+  - name: checkout
+    description: Everything about your creating and checking invoices
+security:
+  - ApiKeyAuth: []
+paths:
+  /wallet:
+    get:
+      tags:
+        - wallet
+      summary: Get your wallet status
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    description: The wallet name
+                  balance:
+                    type: number
+                    description: The wallet balance in sats
+                  totalFiatAmount:
+                    type: number
+                    description: The wallet's fiat amount charged this year
+        "403":
+          description: Api key not provided
+        "500":
+          description: Invalid API key or unknown error
+  /payments:
+    get:
+      tags:
+        - wallet
+      summary: Get your invoices history
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Payment"
+        "403":
+          description: Api key not provided
+        "500":
+          description: Invalid API key or unknown error
+  /checkout:
+    post:
+      tags:
+        - checkout
+      summary: Create an invoice
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckoutRequest"
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CheckoutResponse"
+        "403":
+          description: Api key not provided
+        "500":
+          description: Invalid API key or unknown error
+  /checkout/{id}:
+    get:
+      tags:
+        - checkout
+      summary: Check invoice status
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: Hash ID of invoice
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CheckoutStatus"
+        "403":
+          description: Api key not provided
+        "500":
+          description: Invalid API key or unknown error
+components:
+  schemas:
+    CheckoutRequest:
+      required:
+        - title
+        - amount
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        amount:
+          type: number
+        unit:
+          type: string
+        onChain:
+          type: boolean
+        redirect:
+          type: boolean
+        redirectAfterPaid:
+          type: string
+    CheckoutResponse:
+      required:
+        - payment_hash
+        - checkoutUrl
+      type: object
+      properties:
+        payment_hash:
+          type: string
+        checkoutUrl:
+          type: string
+        onChainAddr:
+          type: string
+    CheckoutStatus:
+      required:
+        - createdAt
+        - delay
+        - pr
+        - amount
+        - btcAmount
+        - unit
+        - isPaid
+        - isInit
+        - isExpired
+        - title
+        - hash
+        - fiatAmount
+        - fiatUnit
+      type: object
+      properties:
+        createdAt:
+          type: number
+        delay:
+          type: number
+        pr:
+          type: string
+        amount:
+          type: number
+        btcAmount:
+          type: string
+        unit:
+          type: string
+        isPaid:
+          type: boolean
+        isInit:
+          type: boolean
+        isExpired:
+          type: boolean
+        paymentMethid:
+          type: string
+          enum:
+            - lightning
+            - onchain
+        paidAt:
+          type: number
+        title:
+          type: string
+        description:
+          type: string
+        hash:
+          type: string
+        fiatAmount:
+          type: number
+        fiatUnit:
+          type: string
+        onChainAddr:
+          type: string
+        minConfirmations:
+          type: number
+        confirmations:
+          type: number
+        txid:
+          type: string
+        idPending:
+          type: boolean
+        redirectAfterPaid:
+          type: string
+    Payment:
+      type: object
+      properties:
+        checking_id:
+          type: string
+        pending:
+          type: boolean
+        amount:
+          type: number
+        fee:
+          type: number
+        memo:
+          type: string
+        time:
+          type: number
+        bolt11:
+          type: string
+        preimage:
+          type: string
+        payment_hash:
+          type: string
+        extra:
+          type: object
+        wallet_id:
+          type: string
+        webhook:
+          type: string
+        webhook_status:
+          type: string
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: "X-Api-Key"
