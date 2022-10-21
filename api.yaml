@@ -76,9 +76,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/CheckoutResponse"
+                $ref: "#/components/schemas/CheckoutResponse"
         "403":
           description: Api key not provided
         "500":
@@ -101,9 +99,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/CheckoutStatus"
+                $ref: "#/components/schemas/CheckoutStatus"
         "403":
           description: Api key not provided
         "500":
