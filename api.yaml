@@ -1,65 +1,19 @@
 openapi: 3.0.3
 info:
   title: Swiss Bitcoin Pay Merchant's API
-  description: "API for merchants to connect to their Swiss Bitcoin Pay's wallet account.<br/>For all calls, you need to provide the `X-Api-Key` header with your API Key, available in your dashboard."
+  description: "API for merchants to connect to their Swiss Bitcoin Pay's wallet account.<br/>For creating an invoice, you need to provide the `X-Api-Key` header with your API Key, available in your dashboard (not required for reading invoice)."
   termsOfService: http://swagger.io/terms/
   contact:
     email: hello@swiss-bitcoin-pay.ch
-  version: 1.0.0
+  version: 1.0.1
 servers:
   - url: https://api.swiss-bitcoin-pay.ch
 tags:
-  - name: wallet
-    description: Everything about your wallet
   - name: checkout
-    description: Everything about your creating and checking invoices
+    description: Everything about creating and checking invoices
 security:
   - ApiKeyAuth: []
 paths:
-  /wallet:
-    get:
-      tags:
-        - wallet
-      summary: Get your wallet status
-      responses:
-        "200":
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  name:
-                    type: string
-                    description: The wallet name
-                  balance:
-                    type: number
-                    description: The wallet balance in sats
-                  totalFiatAmount:
-                    type: number
-                    description: The wallet's fiat amount charged this year
-        "403":
-          description: Api key not provided
-        "500":
-          description: Invalid API key or unknown error
-  /payments:
-    get:
-      tags:
-        - wallet
-      summary: Get your invoices history
-      responses:
-        "200":
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Payment"
-        "403":
-          description: Api key not provided
-        "500":
-          description: Invalid API key or unknown error
   /checkout:
     post:
       tags:
@@ -100,10 +54,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CheckoutStatus"
-        "403":
-          description: Api key not provided
         "500":
-          description: Invalid API key or unknown error
+          description: Unknown error
 components:
   schemas:
     CheckoutRequest:
