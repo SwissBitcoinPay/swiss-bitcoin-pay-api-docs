@@ -11,8 +11,6 @@ servers:
 tags:
   - name: checkout
     description: Everything about creating and checking invoices
-security:
-  - ApiKeyAuth: []
 paths:
   /checkout:
     post:
@@ -24,6 +22,8 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/CheckoutRequest"
+      security:
+        - ApiKeyAuth: []
       responses:
         "200":
           description: Successful operation
