@@ -5,7 +5,7 @@ info:
   termsOfService: http://swagger.io/terms/
   contact:
     email: hello@swiss-bitcoin-pay.ch
-  version: 1.0.1
+  version: 1.1.0
 servers:
   - url: https://api.swiss-bitcoin-pay.ch
 tags:
@@ -66,18 +66,29 @@ components:
       properties:
         title:
           type: string
+          description: "What will appear on the client's wallet"
         description:
           type: string
         amount:
           type: number
+          description: "How much to charge, with decimals. ex: `21.50`"
         unit:
+          default: Your account's default currency
           type: string
+          description: "Optionally select a reference currency you want use. All major currencies are supported, along with `sats` and `BTC`"
         onChain:
+          default: false
           type: boolean
+          description: "If Onchain payment is available"
         redirect:
           type: boolean
+          description: "If the server should directly return a 302 REDIRECT request to force the user's browser to go to the invoice payment page"
         redirectAfterPaid:
           type: string
+          description: "Where the user will be redirected after paid (confirmation page).<br/>(Lightning: instant, Onchain: after 1 confirmation)"
+        webhook:
+          type: string
+          description: "Our backend will call this webhook with a POST request will all the invoice details once it has been paid<br/>(Lightning: instant, Onchain: after 1 confirmation)<br/><br/>This data is never visible to the user."
     CheckoutResponse:
       required:
         - payment_hash
