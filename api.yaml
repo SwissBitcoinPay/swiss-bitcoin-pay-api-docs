@@ -1,11 +1,11 @@
 openapi: 3.0.3
 info:
   title: Swiss Bitcoin Pay Merchant's API
-  description: "API for merchants to connect to their Swiss Bitcoin Pay's wallet account.<br/>For creating an invoice, you need to provide the `X-Api-Key` header with your API Key, available in your dashboard (not required for reading invoice)."
+  description: "API for merchants to connect to their Swiss Bitcoin Pay's wallet account.<br/>For creating an invoice, you need to provide the `api-key` header with your API Key, available in your dashboard (not required for reading invoice)."
   termsOfService: http://swagger.io/terms/
   contact:
     email: hello@swiss-bitcoin-pay.ch
-  version: 1.1.0
+  version: 1.1.1
 servers:
   - url: https://api.swiss-bitcoin-pay.ch
 tags:
@@ -198,4 +198,4 @@ components:
     ApiKeyAuth:
       type: apiKey
       in: header
-      name: "X-Api-Key"
+      name: "api-key"
