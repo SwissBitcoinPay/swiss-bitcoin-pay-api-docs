@@ -5,7 +5,7 @@ info:
   termsOfService: http://swagger.io/terms/
   contact:
     email: hello@swiss-bitcoin-pay.ch
-  version: 1.1.1
+  version: 1.1.2
 servers:
   - url: https://api.swiss-bitcoin-pay.ch
 tags:
@@ -80,6 +80,10 @@ components:
           default: false
           type: boolean
           description: "If Onchain payment is available"
+        delay:
+          default: 10
+          type: number
+          description: "How long (in minutes) the client have to pay the invoice before it gets expired"
         redirect:
           type: boolean
           description: "If the server should directly return a 302 REDIRECT request to force the user's browser to go to the invoice payment page"
