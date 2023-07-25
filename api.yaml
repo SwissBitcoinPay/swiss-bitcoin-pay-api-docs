@@ -84,6 +84,12 @@ components:
           default: 10
           type: number
           description: "How long (in minutes) the client have to pay the invoice before it gets expired"
+        email:
+          type: string
+          description: "An message containing the invoice will be sent to this email"
+        emailLanguage:
+          type: string
+          description: "In which language the email should be sent. Currently only supports `en` and `fr`"
         redirect:
           type: boolean
           description: "If the server should directly return a 302 REDIRECT request to force the user's browser to go to the invoice payment page"
