@@ -5,7 +5,7 @@ info:
   termsOfService: http://swagger.io/terms/
   contact:
     email: hello@swiss-bitcoin-pay.ch
-  version: 1.1.2
+  version: 1.1.3
 servers:
   - url: https://api.swiss-bitcoin-pay.ch
 tags:
@@ -86,7 +86,7 @@ components:
           description: "How long (in minutes) the client have to pay the invoice before it gets expired"
         email:
           type: string
-          description: "An message containing the invoice will be sent to this email"
+          description: "An message containing the created invoice will be sent to this email"
         emailLanguage:
           type: string
           description: "In which language the email should be sent. Currently only supports `en` and `fr`"
