@@ -101,11 +101,14 @@ components:
           description: "Our backend will call this webhook with a POST request will all the invoice details once it has been paid<br/>(Lightning: instant, Onchain: after 1 confirmation)<br/><br/>This data is never visible to the user."
     CheckoutResponse:
       required:
-        - payment_hash
+        - id
+        - pr
         - checkoutUrl
       type: object
       properties:
-        payment_hash:
+        id:
+          type: string
+        pr:
           type: string
         checkoutUrl:
           type: string
