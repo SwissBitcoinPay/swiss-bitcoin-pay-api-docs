@@ -75,7 +75,7 @@ components:
         unit:
           default: Your account's default currency
           type: string
-          description: "Optionally select a reference currency you want use. All major currencies are supported, along with `sats` and `BTC`"
+          description: "Optionally select a reference currency you want use. All major currencies are supported, along with `sat` and `BTC`"
         onChain:
           default: false
           type: boolean
