@@ -5,12 +5,15 @@ info:
   termsOfService: http://swagger.io/terms/
   contact:
     email: hello@swiss-bitcoin-pay.ch
-  version: 1.1.6
+  version: 1.2.0
 servers:
   - url: https://api.swiss-bitcoin-pay.ch
 tags:
   - name: checkout
     description: Everything about creating and checking invoices
+tags:
+  - name: atm
+    description: Everything about the ATM service
 paths:
   /checkout:
     post:
@@ -56,6 +59,30 @@ paths:
                 $ref: "#/components/schemas/CheckoutStatus"
         "500":
           description: Unknown error
+  /checkout:
+    post:
+      tags:
+        - atm
+      summary: Create LNURLw QR code
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AtmWithdrawRequest"
+      security:
+        - ApiKeyAuth: []
+        - SbpSigAuth: []
+      responses:
+        "201":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AtmWidthawResponse"
+        "403":
+          description: Api key or Signature not provided
+        "500":
+          description: Invalid API key or unknown error
 components:
   schemas:
     CheckoutRequest:
@@ -105,7 +132,10 @@ components:
           properties:
             customNote:
               type: string
-              description: "This note will be visible on the Dashboard's activities list"
+              description: An optional note that will be visible in your Dashboard's activities list
+            customDevice:
+              type: string
+              description: An optional device name to keep track in your dashboard from which device/software the invoice code was generated. ex. `Phone A`
             AnyValue:
               description: "Can be anything: string, number, array, object, etc., including `null`"
     CheckoutResponse:
@@ -216,8 +246,53 @@ components:
           type: string
         webhook_status:
           type: string
+    AtmWithdrawRequest:
+      required:
+        - amount
+      type: object
+      properties:
+        amount:
+          type: number
+          description: "How much to withdraw. ex: `21`"
+        unit:
+          default: Your account's default currency
+          type: string
+          description: "In which currency is the `amount` denominated. ex: `EUR`. All major currencies are supported, along with `sat` and `BTC`"
+        title:
+          type: string
+          description: Set a specific title that your client will see & keep when scanning your LNURLw QR code
+        uses:
+          default: 1
+          type: number
+          description: How many times the LNURLw QR code can be used to withdraw sats
+        wait_time:
+          default: 1
+          type: number
+          description: How long to wait in seconds between each withdraw
+        deviceName:
+          type: string
+          description: An optional device name to keep track in your dashboard from which device/software the LNURLw QR code was generated. ex. `ATM A`
+        customNote:
+          type: string
+          description: An optional note that will be visible in your Dashboard's activities list
+        language:
+          type: string
+          description: In which language the default `title` should be expressed. No effect if you defined `title`
+        webhook_url:
+          type: string
+          description: Webhook called when the QR code is withdrawn
+        webhook_body:
+          type: string
+          description: Attached body to the webhook
+        webhook_headers:
+          type: string
+          description: Attached headers to the webhook
   securitySchemes:
     ApiKeyAuth:
       type: apiKey
       in: header
       name: "api-key"
+    SbpSigAuth:
+      type: sbpSig
+      in: header
+      name: "sbp-sig"
