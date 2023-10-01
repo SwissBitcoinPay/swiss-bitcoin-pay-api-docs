@@ -276,7 +276,7 @@ components:
           description: An optional note that will be visible in your Dashboard's activities list
         language:
           type: string
-          description: In which language the default `title` should be expressed. No effect if you defined `title`
+          description: In which language the default `title` should be expressed. Currently only supports `en` and `fr`. No effect if you defined `title`
         webhook_url:
           type: string
           description: Webhook called when the QR code is withdrawn
