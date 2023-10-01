@@ -11,9 +11,8 @@ servers:
 tags:
   - name: checkout
     description: Everything about creating and checking invoices
-tags:
   - name: atm
-    description: Everything about the ATM service
+    description: "Everything about the ATM service<br /><br />You need to provide 2 keys in the header:<br/>1. `api-key`: Your API key available in your dashboard<br/>2. `sbp-sig`: An HMAC SHA-256 signature of your payload, with the encryption key in your dashboard as `sha256=${signature}`"
 paths:
   /checkout:
     post:
@@ -59,7 +58,7 @@ paths:
                 $ref: "#/components/schemas/CheckoutStatus"
         "500":
           description: Unknown error
-  /checkout:
+  /atm-withdraw:
     post:
       tags:
         - atm
@@ -100,7 +99,7 @@ components:
           type: number
           description: "How much to charge, with decimals. ex: `21.50`"
         unit:
-          default: Your account's default currency
+          default: "Your account's default currency"
           type: string
           description: "Optionally select a reference currency you want use. All major currencies are supported, along with `sat` and `BTC`"
         onChain:
@@ -255,7 +254,7 @@ components:
           type: number
           description: "How much to withdraw. ex: `21`"
         unit:
-          default: Your account's default currency
+          default: "Your account's default currency"
           type: string
           description: "In which currency is the `amount` denominated. ex: `EUR`. All major currencies are supported, along with `sat` and `BTC`"
         title:
@@ -287,6 +286,18 @@ components:
         webhook_headers:
           type: string
           description: Attached headers to the webhook
+    AtmWidthawResponse:
+      required:
+        - lnurl
+        - amount
+      type: object
+      properties:
+        lnurl:
+          type: string
+          description: The LNURLw to be displayed as a QR code
+        amount:
+          type: string
+          description: Amount in sats
   securitySchemes:
     ApiKeyAuth:
       type: apiKey
