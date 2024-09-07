@@ -5,7 +5,7 @@ info:
   termsOfService: http://swagger.io/terms/
   contact:
     email: hello@swiss-bitcoin-pay.ch
-  version: 1.2.0
+  version: 1.2.1
 servers:
   - url: https://api.swiss-bitcoin-pay.ch
 tags:
@@ -123,8 +123,20 @@ components:
           type: string
           description: "Where the user will be redirected after paid (confirmation page).<br/>(Lightning: instant, Onchain: after 1 confirmation)"
         webhook:
-          type: string
-          description: "Our backend will call this webhook with a POST request will all the invoice details once it has been paid (Lightning: instant, Onchain: after 1 confirmation) OR expired.<br/>You need to manually check on your side the `isPaid` or `isExpired` values in the request to know which event happened.<br/>The webhook URL is never visible to the user"
+          type: object
+          description: "Our backend will call your webhook with a POST request will all the invoice details once it has been paid (Lightning: instant, Onchain: after 1 confirmation), unconfirmed (in case of an Onchain payment just discovered), or expired.<br/>You need to manually check on your side the `status` value (will be either `paid`, `unconfirmed`, or `expired`).<br/>The webhook configuration is never visible to the user"
+          required:
+            - url
+          properties:
+            url:
+              type: string
+              description: Your URL to be called with a POST request with all the invoice details
+            headers:
+              type: object
+              description: An optional object that our backend will include as headers when making the POST request
+            body:
+              type: object
+              description: "Optional object that our backend will include in the POST request alongside the invoice data. Can be anything: string, number, array, object, etc., including `null`"
         extra:
           type: object
           description: "Any extra parameters that will be returned to you when your webhook is called"
