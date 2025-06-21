@@ -1,18 +1,18 @@
-openapi: 3.0.3
+openapi: 3.1.0
 info:
   title: Swiss Bitcoin Pay Merchant's API
-  description: "API for merchants to connect to their Swiss Bitcoin Pay's wallet account.<br/>For creating an invoice, you need to provide the `api-key` header with your API Key, available in your dashboard (not required for reading invoice)."
+  description: "API for merchants to connect to their Swiss Bitcoin Pay's wallet account.<br/>For creating an invoice, you need to provide the `api-key` header with your API Key, available in your dashboard (the API Key is not required to read invoice's status with webhook or GET requests)."
   termsOfService: http://swagger.io/terms/
   contact:
     email: hello@swiss-bitcoin-pay.ch
-  version: 1.2.1
+  version: 1.3.0
 servers:
   - url: https://api.swiss-bitcoin-pay.ch
 tags:
   - name: checkout
     description: Everything about creating and checking invoices
-  - name: atm
-    description: "Everything about the ATM service<br /><br />You need to provide 2 keys in the header:<br/>1. `api-key`: Your API key available in your dashboard<br/>2. `sbp-sig`: An HMAC SHA-256 signature of your payload, with the encryption key in your dashboard as `sha256=${signature}`"
+  # - name: atm
+  #   description: "Everything about the ATM service<br /><br />You need to provide 2 keys in the header:<br/>1. `api-key`: Your API key available in your dashboard<br/>2. `sbp-sig`: An HMAC SHA-256 signature of your payload, with the encryption key in your dashboard as `sha256=${signature}`"
 paths:
   /checkout:
     post:
@@ -41,47 +41,124 @@ paths:
     get:
       tags:
         - checkout
-      summary: Check invoice status
+      summary: Get invoice
       parameters:
         - in: path
           name: id
           schema:
             type: string
+            format: uuid
           required: true
-          description: Hash ID of invoice
+          description: ID of invoice
       responses:
         "200":
           description: Successful operation
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CheckoutStatus"
+                $ref: "#/components/schemas/Invoice"
         "500":
           description: Unknown error
-  /atm-withdraw:
-    post:
+  /invoice:
+    get:
       tags:
-        - atm
-      summary: Create LNURLw QR code
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/AtmWithdrawRequest"
-      security:
-        - ApiKeyAuth: []
-        - SbpSigAuth: []
+        - checkout
+      summary: "[Websocket] Receive invoice updates"
+      description: |
+        Get notified when any property of an invoice changes (eg. invoice settled, lightning invoice and sat amount updated)
+
+        This endpoint initiates a WebSocket connection.
+
+        **URL:** `wss://api.swiss-bitcoin-pay.ch/invoice`
+
+        To connect, use the WebSocket protocol:
+        ```javascript
+        const socket = new WebSocket("wss://api.swiss-bitcoin-pay.ch/invoice");
+        ```
+
+        Once connected, simply send the invoice ID with which you want to be notified as JSON:
+        ```json
+        {
+          "id": "INVOICE_ID"
+        }
+        ```
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: ID of invoice
       responses:
-        "201":
+        "200":
           description: Successful operation
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AtmWidthawResponse"
-        "403":
-          description: Api key or Signature not provided
-        "500":
-          description: Invalid API key or unknown error
+                $ref: "#/components/schemas/Invoice"
+  # /atm-withdraw:
+  #   post:
+  #     tags:
+  #       - atm
+  #     summary: Create LNURLw QR code
+  #     requestBody:
+  #       content:
+  #         application/json:
+  #           schema:
+  #             $ref: "#/components/schemas/AtmWithdrawRequest"
+  #     security:
+  #       - ApiKeyAuth: []
+  #       - SbpSigAuth: []
+  #     responses:
+  #       "201":
+  #         description: Successful operation
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: "#/components/schemas/AtmWidthawResponse"
+  #       "403":
+  #         description: Api key or Signature not provided
+  #       "500":
+  #         description: Invalid API key or unknown error
+# webhooks:
+#   /invoice:
+#     post:
+#       tags:
+#         - checkout
+#       description: Receive invoice updates
+#       requestBody:
+#         description: Get notified when any property of an invoice changes (eg. invoice settled, lightning invoice and sat amount updated)
+#         content:
+#           application/json:
+#             schema:
+#               $ref: "#/components/schemas/InvoiceId"
+#       responses:
+#         "200":
+#           description: Return a 200 status to indicate that the data was received successfully
+#           content:
+#             application/json:
+#               schema:
+#                 $ref: "#/components/schemas/Invoice"
+# webhooks:
+#   /invoice:
+#     post:
+#       tags:
+#         - checkout
+#       description: Receive invoice updates
+#       requestBody:
+#         description: Get notified when any property of an invoice changes (eg. invoice settled, lightning invoice and sat amount updated)
+#         content:
+#           application/json:
+#             schema:
+#               $ref: "#/components/schemas/InvoiceId"
+#       responses:
+#         "200":
+#           description: Return a 200 status to indicate that the data was received successfully
+#           content:
+#             application/json:
+#               schema:
+#                 $ref: "#/components/schemas/Invoice"
 components:
   schemas:
     CheckoutRequest:
@@ -112,19 +189,27 @@ components:
           description: "How long (in minutes) the client have to pay the invoice before it gets expired"
         email:
           type: string
-          description: "An message containing the created invoice will be sent to this email"
+          description: "A message containing the created invoice will be sent to this email"
         emailLanguage:
           type: string
-          description: "In which language the email should be sent. Currently only supports `en` and `fr`"
+          description: "In which language the email should be sent. If language is unknown, will fall back to `en` (English)"
+          enum:
+            - en
+            - fr
+            - de
+            - it
+            - es
+            - pt
+            - fi
         redirect:
           type: boolean
           description: "If the server should directly return a 302 REDIRECT request to force the user's browser to go to the invoice payment page"
         redirectAfterPaid:
           type: string
-          description: "Where the user will be redirected after paid (confirmation page).<br/>(Lightning: instant, Onchain: after 1 confirmation)"
+          description: 'A URL where the user will be redirected after paid (confirmation page).<br/>(Lightning: instant, Onchain: after 1 confirmation)<br/><br/>Custom schemas and deeplinks are also supported.<br/><br/>This information is revelated by the server only when the invoice is fully settled, so it is safe to hide a "secret" redirection page or use this parameter as a paywall redirection.'
         webhook:
           type: object
-          description: "Our backend will call your webhook with a POST request will all the invoice details once it has been paid (Lightning: instant, Onchain: after 1 confirmation), unconfirmed (in case of an Onchain payment just discovered), or expired.<br/>You need to manually check on your side the `status` value (will be either `paid`, `unconfirmed`, or `expired`).<br/>The webhook configuration is never visible to the user"
+          description: "Our backend will call your webhook with a POST request will all the invoice data once it has been paid (Lightning: instant, Onchain: after 1 confirmation), unconfirmed (when a Onchain payment was just discovered), or expired.<br/>You need to manually check on your side the `status` value (will be respectively `paid`, `unconfirmed`, or `expired`).<br/>The webhook configuration is never visible to the user"
           required:
             - url
           properties:
@@ -137,16 +222,12 @@ components:
             body:
               type: object
               description: "Optional object that our backend will include in the POST request alongside the invoice data. Can be anything: string, number, array, object, etc., including `null`"
+        device:
+          $ref: "#/components/schemas/Device"
         extra:
           type: object
           description: "Any extra parameters that will be returned to you when your webhook is called"
           properties:
-            customNote:
-              type: string
-              description: An optional note that will be visible in your Dashboard's activities list
-            customDevice:
-              type: string
-              description: An optional device name to keep track in your dashboard from which device/software the invoice code was generated. ex. `Phone A`
             AnyValue:
               description: "Can be anything: string, number, array, object, etc., including `null`"
     CheckoutResponse:
@@ -154,80 +235,365 @@ components:
         - id
         - pr
         - checkoutUrl
+        - amount
       type: object
       properties:
         id:
           type: string
+          format: uuid
         pr:
           type: string
+          description: Initial lightning invoice, expires after 10 minutes.<br/>New lightning invoice is available by listening to invoice updates with webhook `/invoice` or `GET /checkout/{id}`
         checkoutUrl:
           type: string
+          description: Url to our standard invoice payment page, to use if you don't implement your own QR code display etc..
         onChainAddr:
-          type: string
-    CheckoutStatus:
-      required:
-        - createdAt
-        - delay
-        - pr
-        - amount
-        - btcAmount
-        - unit
-        - isPaid
-        - isInit
-        - isExpired
-        - title
-        - hash
-        - fiatAmount
-        - fiatUnit
-      type: object
-      properties:
-        createdAt:
-          type: number
-        delay:
-          type: number
-        pr:
+          description: Onchain address (if enabled) to pay the invoice. This address is valid until the invoice expiration.
           type: string
         amount:
           type: number
-        btcAmount:
+          description: Initial amount (in sats). This value expires after 10 minutes.<br/>New amount is available by listening invoice updates with webhook `/invoice` or `GET /checkout/{id}`
+    Invoice:
+      required:
+        - id
+        - title
+        - merchantName
+        - status
+        - createdAt
+        - amount
+        - paymentDetails
+        - input
+        - delay
+      type: object
+      properties:
+        id:
           type: string
-        unit:
-          type: string
-        isPaid:
-          type: boolean
-        isInit:
-          type: boolean
-        isExpired:
-          type: boolean
-        paymentMethod:
-          type: string
-          enum:
-            - lightning
-            - onchain
-        paidAt:
-          type: number
+          format: uuid
         title:
           type: string
         description:
           type: string
+        merchantName:
+          type: string
+        status:
+          type: string
+          enum:
+            - draft
+            - open
+            - underpaid
+            - unconfirmed
+            - settled
+            - canceled
+            - expired
+        tag:
+          type: string
+        createdAt:
+          type: number
+        paidAt:
+          type: number
+        amount:
+          type: number
+        paymentDetails:
+          type: array
+          items:
+            oneOf:
+              - $ref: "#/components/schemas/LightningPaymentDetails"
+              - $ref: "#/components/schemas/OnchainPaymentDetails"
+        paymentMethod:
+          $ref: "#/components/schemas/PaymentNetwork"
+        input:
+          type: object
+          required:
+            - unit
+            - amount
+          properties:
+            unit:
+              $ref: "#/components/schemas/Unit"
+            amount:
+              type: number
+        delay:
+          type: number
+        extra:
+          type: object
+        device:
+          $ref: "#/components/schemas/Device"
+        redirectAfterPaid:
+          type: string
+        isInit:
+          type: boolean
+          deprecated: true
+        btcAmount:
+          type: string
+          deprecated: true
+        pr:
+          type: string
+          deprecated: true
+        isPaid:
+          type: boolean
+          deprecated: true
+        isExpired:
+          type: boolean
+          deprecated: true
         hash:
           type: string
+          deprecated: true
         fiatAmount:
           type: number
+          deprecated: true
         fiatUnit:
           type: string
+          deprecated: true
         onChainAddr:
           type: string
+          deprecated: true
+        minConfirmations:
+          type: number
+          deprecated: true
+        confirmations:
+          type: number
+          deprecated: true
+        txId:
+          type: string
+          deprecated: true
+        isPending:
+          type: boolean
+          deprecated: true
+    InvoiceId:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          format: uuid
+    Unit:
+      type: string
+      enum:
+        - sat
+        - BTC
+        - EUR
+        - CHF
+        - GBP
+        - USD
+        - JPY
+        - HKD
+        - SGD
+        - NOK
+        - NZD
+        - SEK
+        - DKK
+        - AUD
+        - CAD
+        - PLN
+        - CZK
+        - AED
+        - HUF
+        - MXN
+        - ZAR
+        - AFN
+        - ALL
+        - AMD
+        - ANG
+        - AOA
+        - ARS
+        - AWG
+        - AZN
+        - BAM
+        - BBD
+        - BDT
+        - BGN
+        - BHD
+        - BIF
+        - BMD
+        - BND
+        - BOB
+        - BRL
+        - BSD
+        - BTN
+        - BWP
+        - BYN
+        - BZD
+        - CDF
+        - CLF
+        - CLP
+        - CNH
+        - CNY
+        - COP
+        - CRC
+        - CUC
+        - CUP
+        - CVE
+        - DJF
+        - DOP
+        - DZD
+        - EGP
+        - ERN
+        - ETB
+        - FJD
+        - FKP
+        - GEL
+        - GGP
+        - GHS
+        - GIP
+        - GMD
+        - GNF
+        - GTQ
+        - GYD
+        - HNL
+        - HRK
+        - HTG
+        - IDR
+        - ILS
+        - IMP
+        - INR
+        - IQD
+        - IRR
+        - ISK
+        - JEP
+        - JMD
+        - JOD
+        - KES
+        - KGS
+        - KHR
+        - KMF
+        - KPW
+        - KRW
+        - KWD
+        - KYD
+        - KZT
+        - LAK
+        - LBP
+        - LKR
+        - LRD
+        - LSL
+        - LYD
+        - MAD
+        - MDL
+        - MGA
+        - MKD
+        - MMK
+        - MNT
+        - MOP
+        - MRO
+        - MUR
+        - MVR
+        - MWK
+        - MYR
+        - MZN
+        - NAD
+        - NGN
+        - NIO
+        - NPR
+        - OMR
+        - PAB
+        - PEN
+        - PGK
+        - PHP
+        - PKR
+        - PYG
+        - QAR
+        - RON
+        - RSD
+        - RUB
+        - RWF
+        - SAR
+        - SBD
+        - SCR
+        - SDG
+        - SHP
+        - SLL
+        - SOS
+        - SRD
+        - SSP
+        - STD
+        - SVC
+        - SYP
+        - SZL
+        - THB
+        - TJS
+        - TMT
+        - TND
+        - TOP
+        - TRY
+        - TTD
+        - TWD
+        - TZS
+        - UAH
+        - UGX
+        - UYU
+        - UZS
+        - VES
+        - VND
+        - VUV
+        - WST
+        - XAF
+        - XAG
+        - XAU
+        - XCD
+        - XDR
+        - XOF
+        - XPD
+        - XPF
+        - XPT
+        - YER
+        - ZMW
+        - ZWL
+    PaymentNetwork:
+      type: string
+      enum:
+        - lightning
+        - onchain
+    LightningPaymentDetails:
+      type: object
+      required:
+        - network
+        - paymentRequest
+        - hash
+      properties:
+        network:
+          type: string
+          const: lightning
+        paymentRequest:
+          type: string
+        hash:
+          type: string
+        preimage:
+          type: string
+        paidAt:
+          type: number
+        amount:
+          type: number
+    Device:
+      type: object
+      description: An optional device info to keep track in your dashboard and exports from which device/software the invoice code was generated. ex. `name=Satohi's Phone` and `type=phone`
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+    OnchainPaymentDetails:
+      type: object
+      required:
+        - network
+        - address
+      properties:
+        network:
+          type: string
+          const: onchain
+        address:
+          type: string
+        txId:
+          type: string
+        amount:
+          type: number
+        paidAt:
+          type: number
         minConfirmations:
           type: number
         confirmations:
           type: number
-        txid:
-          type: string
-        idPending:
-          type: boolean
-        redirectAfterPaid:
-          type: string
+        vout_index:
+          type: number
     Payment:
       type: object
       properties:
